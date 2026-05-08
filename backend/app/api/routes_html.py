@@ -40,7 +40,7 @@ from app.schemas.html import (
     HtmlVersionSaveResponse,
     ValidationResult,
 )
-from app.services.claude_provider import ClaudeProvider
+from app.services.claude_provider import get_provider, provider_name_for_model
 from app.services.html_validation import validate_html
 from app.services.prompt_agent import PromptAgent
 
@@ -89,7 +89,8 @@ def _embed_image_base64(html_content: str, image_abs_path: str) -> str:
         b64 = base64.b64encode(f.read()).decode("ascii")
 
     data_uri = f"data:{mime_type};base64,{b64}"
-    return re.sub(r"url\(['\"]?/workspace/[^'\")\s]+['\"]?\)", f"url('{data_uri}')", html_content)
+    # 匹配 url(...) 中非 data: 的任何图片路径（相对路径、绝对路径均可）
+    return re.sub(r"url\(['\"]?(?!data:)([^'\")\s]+)['\"]?\)", f"url('{data_uri}')", html_content)
 
 
 def _get_required_fields(brief: dict) -> list[str]:
@@ -281,7 +282,7 @@ async def generate_html(
         task_type="html_generation",
         status="running",
         model=model_name,
-        provider="claude",
+        provider=provider_name_for_model(model_name),
         input_json=json.dumps(
             {
                 "brief": brief,
@@ -298,7 +299,7 @@ async def generate_html(
 
     # 9. 调用 Claude 生成 HTML
     try:
-        provider = ClaudeProvider(model=model_name)
+        provider = get_provider(model_name)
         raw_response = await provider.complete(
             system=_HTML_SYSTEM,
             user_message=html_prompt,
