@@ -46,6 +46,12 @@ _MAX_IMAGE_POLL_SECONDS = 1200
 
 # ── 工具函数 ──────────────────────────────────────────────────────────────────
 
+def _coerce_utc(dt: datetime) -> datetime:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
+
+
 def _get_campaign_or_404(db: Session, campaign_id: str) -> Campaign:
     campaign = db.get(Campaign, campaign_id)
     if campaign is None:
@@ -301,7 +307,8 @@ async def get_image_batch_status(
     ]
 
     for asset in pending_assets:
-        elapsed_seconds = (datetime.now(timezone.utc) - asset.created_at).total_seconds()
+        created_at_utc = _coerce_utc(asset.created_at)
+        elapsed_seconds = (datetime.now(timezone.utc) - created_at_utc).total_seconds()
         if elapsed_seconds > _MAX_IMAGE_POLL_SECONDS:
             asset.status = "failed"
             asset.error_message = "生图任务超过 10 分钟未完成，请重新生成一批"
