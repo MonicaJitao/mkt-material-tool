@@ -127,7 +127,7 @@ export function ImageBatchPage() {
             onChange={(e) => setCount(Number(e.target.value))}
             disabled={isPolling}
           >
-            {[2, 4, 6, 8].map((n) => (
+            {[1, 2, 4, 6, 8].map((n) => (
               <option key={n} value={n}>{n} 张</option>
             ))}
           </select>

@@ -11,7 +11,9 @@ Agent C 实现：
   GET    /api/html/poster/{poster_id}                  获取海报及版本列表
 """
 
+import base64
 import json
+import mimetypes
 import os
 import re
 
@@ -74,6 +76,20 @@ def _extract_html(raw: str) -> str:
         return m.group(1).strip()
     stripped = raw.strip()
     return stripped
+
+
+def _embed_image_base64(html_content: str, image_abs_path: str) -> str:
+    """将 HTML 中的底图 URL 替换为 base64 data URI，使 HTML 自包含可分享。"""
+    if not os.path.exists(image_abs_path):
+        return html_content
+
+    mime_type = mimetypes.guess_type(image_abs_path)[0] or "image/jpeg"
+
+    with open(image_abs_path, "rb") as f:
+        b64 = base64.b64encode(f.read()).decode("ascii")
+
+    data_uri = f"data:{mime_type};base64,{b64}"
+    return re.sub(r"url\(['\"]?/workspace/[^'\")\s]+['\"]?\)", f"url('{data_uri}')", html_content)
 
 
 def _get_required_fields(brief: dict) -> list[str]:
@@ -298,6 +314,10 @@ async def generate_html(
         db.commit()
         raise AppError("HTML_GENERATION_FAILED", f"HTML 生成失败：{exc}", status_code=502)
 
+    # 9.5 将底图转为 base64 内嵌，使 HTML 可独立分享
+    image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
+    html_content = _embed_image_base64(html_content, image_abs_path)
+
     # 10. 校验 HTML
     required_fields = _get_required_fields(brief)
     validation = validate_html(
@@ -512,6 +532,17 @@ async def save_version(
     # 校验 HTML
     validation = validate_html(body.html)
 
+    # 将底图转为 base64 内嵌，使 HTML 可独立分享
+    if poster.selected_image_id:
+        image = db.get(ImageAsset, poster.selected_image_id)
+        if image and image.local_path:
+            image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
+            body_html = _embed_image_base64(body.html, image_abs_path)
+        else:
+            body_html = body.html
+    else:
+        body_html = body.html
+
     # 确定版本号
     version_no = _next_version_no(db, poster_id)
 
@@ -520,7 +551,7 @@ async def save_version(
     abs_path = _html_abs_path(rel_path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
     async with aiofiles.open(abs_path, "w", encoding="utf-8") as f:
-        await f.write(body.html)
+        await f.write(body_html)
 
     # 创建版本记录
     version = HtmlVersion(
