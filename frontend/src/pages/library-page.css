@@ -1,0 +1,230 @@
+/* ═══════════════════════════════════════════════════════════════
+   素材库页面
+   ═══════════════════════════════════════════════════════════════ */
+
+.library-page {
+  display: grid;
+  gap: var(--space-5);
+  animation: fadeIn var(--duration-slow) var(--ease-out) both;
+}
+
+/* ── 布局：左项目 / 右活动 ───────────────────────────────────── */
+
+.library-page__layout {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: var(--space-4);
+  min-height: 500px;
+}
+
+.library-page__panel-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--accent-secondary);
+  letter-spacing: var(--tracking-wide);
+  margin-bottom: var(--space-3);
+}
+
+/* ── 项目列表 ─────────────────────────────────────────────────── */
+
+.library-page__projects {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: rgba(28, 28, 30, 0.6);
+  align-self: start;
+}
+
+.library-page__project-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.library-page__project-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition:
+    background var(--duration-fast) var(--ease-out),
+    border-color var(--duration-fast) var(--ease-out);
+}
+
+.library-page__project-item:hover {
+  background: var(--bg-elevated);
+}
+
+.library-page__project-item--active {
+  background: rgba(217, 79, 43, 0.1);
+  border-left: 2px solid var(--accent-primary);
+}
+
+.library-page__project-name {
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+  font-weight: var(--font-medium);
+}
+
+.library-page__project-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── 活动列表 ─────────────────────────────────────────────────── */
+
+.library-page__campaigns {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.library-page__campaigns-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.library-page__campaigns-header .library-page__panel-label {
+  margin-bottom: 0;
+}
+
+.library-page__status-filter {
+  max-width: 180px;
+}
+
+.library-page__campaign-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ── 活动卡片 ─────────────────────────────────────────────────── */
+
+.library-page__campaign-card {
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  background: rgba(28, 28, 30, 0.6);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    background var(--duration-fast) var(--ease-out);
+}
+
+.library-page__campaign-card:hover {
+  border-color: var(--border-default);
+  background: rgba(30, 30, 32, 0.8);
+}
+
+.library-page__campaign-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.library-page__campaign-name {
+  font-size: var(--text-base);
+  color: var(--text-primary);
+  font-weight: var(--font-semibold);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── 状态徽章 ─────────────────────────────────────────────────── */
+
+.status-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: var(--tracking-wide);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.status-badge--info {
+  color: var(--color-info);
+  background: rgba(74, 144, 217, 0.12);
+}
+
+.status-badge--success {
+  color: var(--color-success);
+  background: rgba(61, 153, 112, 0.12);
+}
+
+.status-badge--warning {
+  color: var(--color-warning);
+  background: rgba(200, 169, 110, 0.12);
+}
+
+.status-badge--error {
+  color: var(--color-error);
+  background: rgba(217, 79, 43, 0.12);
+}
+
+.status-badge--muted {
+  color: var(--text-muted);
+  background: rgba(90, 90, 96, 0.12);
+}
+
+/* ── 活动元数据 ───────────────────────────────────────────────── */
+
+.library-page__campaign-meta {
+  display: grid;
+  gap: var(--space-1);
+}
+
+.library-page__meta-row {
+  display: grid;
+  grid-template-columns: 60px 1fr;
+  gap: var(--space-2);
+  font-size: var(--text-xs);
+}
+
+.library-page__meta-row dt {
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.library-page__meta-row dd {
+  color: var(--text-secondary);
+}
+
+.library-page__meta-row--error dt {
+  color: var(--color-error);
+}
+
+.library-page__meta-row--error dd {
+  color: var(--color-error);
+}
+
+/* ── 继续编辑按钮 ─────────────────────────────────────────────── */
+
+.library-page__continue-btn {
+  margin-top: auto;
+  align-self: flex-start;
+}
+
+/* ── 响应式 ──────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .library-page__layout {
+    grid-template-columns: 1fr;
+  }
+
+  .library-page__projects {
+    align-self: stretch;
+  }
+
+  .library-page__campaign-grid {
+    grid-template-columns: 1fr;
+  }
+}

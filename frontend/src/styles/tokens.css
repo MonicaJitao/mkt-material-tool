@@ -1,0 +1,159 @@
+/* ═══════════════════════════════════════════════════════════════
+   营销素材工作台 — 设计 Tokens
+   调性：高级编辑部 + 轻工业工作台
+   ═══════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ── 色彩系统 ─────────────────────────────────────────────── */
+
+  /* 基础色板 */
+  --color-ink-950:  #0E0E0F;
+  --color-ink-900:  #141415;
+  --color-ink-800:  #1C1C1E;
+  --color-ink-700:  #252527;
+  --color-ink-600:  #2E2E31;
+  --color-ink-500:  #3D3D41;
+  --color-ink-400:  #5A5A60;
+  --color-ink-300:  #7A7A82;
+  --color-ink-200:  #A0A0AA;
+  --color-ink-100:  #C8C8D0;
+
+  --color-cream-50:  #F2EDE4;
+  --color-cream-100: #EDE7DC;
+  --color-cream-200: #DDD6CA;
+  --color-cream-300: #C8BFB0;
+
+  /* 劳动红 — 主强调色 */
+  --color-red-600:  #B83A1F;
+  --color-red-500:  #D94F2B;
+  --color-red-400:  #E8613F;
+  --color-red-300:  #F07A5A;
+  --color-red-100:  #3D1A12;
+
+  /* 鎏金 — 次强调色 */
+  --color-gold-600: #A8893A;
+  --color-gold-500: #C8A96E;
+  --color-gold-400: #D9BC88;
+  --color-gold-300: #E8D0A8;
+  --color-gold-100: #2E2410;
+
+  /* 状态色 */
+  --color-success:  #3D9970;
+  --color-warning:  #C8A96E;
+  --color-error:    #D94F2B;
+  --color-info:     #4A90D9;
+
+  /* ── 语义色彩 ─────────────────────────────────────────────── */
+
+  --bg-base:        var(--color-ink-950);
+  --bg-surface:     var(--color-ink-900);
+  --bg-elevated:    var(--color-ink-800);
+  --bg-overlay:     var(--color-ink-700);
+  --bg-hover:       var(--color-ink-600);
+
+  --border-subtle:  var(--color-ink-700);
+  --border-default: var(--color-ink-600);
+  --border-strong:  var(--color-ink-500);
+
+  --text-primary:   var(--color-cream-50);
+  --text-secondary: var(--color-ink-200);
+  --text-muted:     var(--color-ink-300);
+  --text-disabled:  var(--color-ink-400);
+
+  --accent-primary: var(--color-red-500);
+  --accent-primary-hover: var(--color-red-400);
+  --accent-primary-bg: var(--color-red-100);
+
+  --accent-secondary: var(--color-gold-500);
+  --accent-secondary-hover: var(--color-gold-400);
+  --accent-secondary-bg: var(--color-gold-100);
+
+  /* ── 字体系统 ─────────────────────────────────────────────── */
+
+  --font-display: 'Noto Serif SC', 'Source Han Serif SC', 'STSong', serif;
+  --font-body:    'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+
+  --text-xs:   0.75rem;    /* 12px */
+  --text-sm:   0.875rem;   /* 14px */
+  --text-base: 1rem;       /* 16px */
+  --text-lg:   1.125rem;   /* 18px */
+  --text-xl:   1.25rem;    /* 20px */
+  --text-2xl:  1.5rem;     /* 24px */
+  --text-3xl:  1.875rem;   /* 30px */
+  --text-4xl:  2.25rem;    /* 36px */
+
+  --font-light:   300;
+  --font-regular: 400;
+  --font-medium:  500;
+  --font-semibold: 600;
+  --font-bold:    700;
+
+  --leading-tight:  1.25;
+  --leading-snug:   1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  --tracking-tight:  -0.02em;
+  --tracking-normal:  0;
+  --tracking-wide:    0.04em;
+  --tracking-wider:   0.08em;
+  --tracking-widest:  0.16em;
+
+  /* ── 间距系统 ─────────────────────────────────────────────── */
+
+  --space-1:  0.25rem;   /* 4px */
+  --space-2:  0.5rem;    /* 8px */
+  --space-3:  0.75rem;   /* 12px */
+  --space-4:  1rem;      /* 16px */
+  --space-5:  1.25rem;   /* 20px */
+  --space-6:  1.5rem;    /* 24px */
+  --space-8:  2rem;      /* 32px */
+  --space-10: 2.5rem;    /* 40px */
+  --space-12: 3rem;      /* 48px */
+  --space-16: 4rem;      /* 64px */
+  --space-20: 5rem;      /* 80px */
+
+  /* ── 圆角 ─────────────────────────────────────────────────── */
+
+  --radius-sm:  2px;
+  --radius-md:  4px;
+  --radius-lg:  8px;
+  --radius-xl:  12px;
+  --radius-full: 9999px;
+
+  /* ── 阴影 ─────────────────────────────────────────────────── */
+
+  --shadow-sm:  0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md:  0 4px 12px rgba(0, 0, 0, 0.5);
+  --shadow-lg:  0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-xl:  0 16px 48px rgba(0, 0, 0, 0.7);
+  --shadow-glow-red:  0 0 20px rgba(217, 79, 43, 0.25);
+  --shadow-glow-gold: 0 0 20px rgba(200, 169, 110, 0.2);
+
+  /* ── 布局尺寸 ─────────────────────────────────────────────── */
+
+  --sidebar-width:     240px;
+  --header-height:     56px;
+  --stepper-width:     200px;
+  --content-max-width: 1200px;
+
+  /* ── 动效 ─────────────────────────────────────────────────── */
+
+  --duration-fast:   120ms;
+  --duration-normal: 200ms;
+  --duration-slow:   350ms;
+  --duration-slower: 500ms;
+
+  --ease-out:    cubic-bezier(0.0, 0.0, 0.2, 1.0);
+  --ease-in-out: cubic-bezier(0.4, 0.0, 0.2, 1.0);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1.0);
+
+  /* ── Z-index 层级 ─────────────────────────────────────────── */
+
+  --z-base:    0;
+  --z-raised:  10;
+  --z-overlay: 100;
+  --z-modal:   200;
+  --z-toast:   300;
+}

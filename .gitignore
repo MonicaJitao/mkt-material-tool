@@ -1,0 +1,55 @@
+# ── 环境变量 ──────────────────────────────────────
+.env
+.env.local
+.env.*.local
+
+# ── Python ───────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+pip-log.txt
+pip-delete-this-directory.txt
+
+# ── 数据库 ───────────────────────────────────────
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# ── 工作区（用户生成的素材）───────────────────────
+workspace/
+
+# ── Node ─────────────────────────────────────────
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── IDE ──────────────────────────────────────────
+.idea/
+.vscode/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# ── OS ───────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── 日志 ─────────────────────────────────────────
+*.log
+
+# ── 子项目（已有独立 .git）───────────────────────
+图像批量生成/.git/
+
+# ── Claude Code ──────────────────────────────────
+.claude/

@@ -1,0 +1,49 @@
+.shell-root {
+  display: grid;
+  grid-template-columns: var(--sidebar-width) 1fr;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at 16% 14%, rgba(200, 169, 110, 0.1), transparent 34%),
+    radial-gradient(circle at 82% 76%, rgba(217, 79, 43, 0.1), transparent 30%),
+    var(--bg-base);
+}
+
+.shell-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.shell-workspace {
+  display: grid;
+  grid-template-columns: var(--stepper-width) 1fr;
+  gap: var(--space-6);
+  flex: 1;
+  padding: var(--space-6);
+}
+
+.shell-canvas {
+  min-width: 0;
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-xl);
+  background: linear-gradient(180deg, rgba(20, 20, 21, 0.96), rgba(14, 14, 15, 0.96));
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-8);
+  animation: fadeIn var(--duration-slower) var(--ease-out) both;
+}
+
+@media (max-width: 1200px) {
+  .shell-root {
+    grid-template-columns: 210px 1fr;
+  }
+}
+
+@media (max-width: 980px) {
+  .shell-root {
+    grid-template-columns: 1fr;
+  }
+
+  .shell-workspace {
+    grid-template-columns: 1fr;
+  }
+}

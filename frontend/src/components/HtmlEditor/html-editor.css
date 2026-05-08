@@ -1,0 +1,32 @@
+.html-editor {
+  height: 100%;
+  min-height: 300px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: #141415;
+}
+
+.html-editor .cm-editor {
+  height: 100%;
+}
+
+/* 确保 CodeMirror 容器撑满 */
+.html-editor .cm-scroller {
+  overflow: auto;
+  flex: 1;
+}
+
+/* 覆盖 CodeMirror 默认 focus outline */
+.html-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+.html-editor .cm-editor.cm-focused .cm-cursorLayer {
+  animation-name: cm-blink;
+}
+
+@keyframes cm-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}

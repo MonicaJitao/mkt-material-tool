@@ -1,0 +1,128 @@
+.candidate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--space-4);
+}
+
+/* ── Card ─────────────────────────────────────────────────────── */
+
+.candidate-card {
+  border: 2px solid var(--border-subtle);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  background: rgba(28, 28, 30, 0.7);
+  transition:
+    border-color var(--duration-fast) var(--ease-out),
+    box-shadow var(--duration-fast) var(--ease-out);
+  cursor: default;
+}
+
+.candidate-card--selected {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 1px var(--accent-primary);
+}
+
+.candidate-card--failed {
+  border-color: var(--color-error);
+  opacity: 0.75;
+}
+
+/* ── Image wrap ───────────────────────────────────────────────── */
+
+.candidate-card__image-wrap {
+  position: relative;
+  aspect-ratio: 9 / 16;
+  background: var(--bg-elevated);
+  overflow: hidden;
+}
+
+.candidate-card__img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── Shimmer / loading ────────────────────────────────────────── */
+
+.candidate-card__shimmer {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    rgba(255, 255, 255, 0.03) 25%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite linear;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding: var(--space-4);
+  gap: var(--space-2);
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.candidate-card__progress-bar {
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.candidate-card__progress-fill {
+  height: 100%;
+  background: var(--accent-primary);
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+.candidate-card__progress-label {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+/* ── Error state ──────────────────────────────────────────────── */
+
+.candidate-card__error-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  padding: var(--space-4);
+}
+
+.candidate-card__error-icon {
+  font-size: var(--text-2xl);
+  color: var(--color-error);
+}
+
+.candidate-card__error-msg {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  text-align: center;
+  line-height: 1.5;
+}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+
+.candidate-card__footer {
+  padding: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.candidate-card__select-btn {
+  width: 100%;
+  font-size: var(--text-sm);
+}
