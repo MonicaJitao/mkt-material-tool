@@ -315,10 +315,6 @@ async def generate_html(
         db.commit()
         raise AppError("HTML_GENERATION_FAILED", f"HTML 生成失败：{exc}", status_code=502)
 
-    # 9.5 将底图转为 base64 内嵌，使 HTML 可独立分享
-    image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
-    html_content = _embed_image_base64(html_content, image_abs_path)
-
     # 10. 校验 HTML
     required_fields = _get_required_fields(brief)
     validation = validate_html(
@@ -506,6 +502,41 @@ async def get_version_raw(version_id: str, db: Session = Depends(get_db)):
     return await _version_html_response(version_id, db)
 
 
+# ── GET /api/html/{version_id}/export ────────────────────────────────────────
+
+@html_router.get("/{version_id}/export", response_class=HTMLResponse)
+async def export_version(version_id: str, db: Session = Depends(get_db)):
+    """
+    导出自包含 HTML：将底图 URL 替换为 base64 data URI，以附件形式下载。
+    编辑态 HTML 保持不变，仅导出时做内嵌。
+    """
+    version = db.get(HtmlVersion, version_id)
+    if version is None:
+        return HTMLResponse("<h1>版本不存在</h1>", status_code=404)
+
+    if not version.html_path:
+        return HTMLResponse("<h1>HTML 文件路径为空</h1>", status_code=404)
+
+    abs_path = _html_abs_path(version.html_path)
+    if not os.path.exists(abs_path):
+        return HTMLResponse(f"<h1>HTML 文件不存在：{version.html_path}</h1>", status_code=404)
+
+    async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
+        html_content = await f.read()
+
+    # 找到关联海报，获取底图绝对路径
+    poster = db.get(HtmlPoster, version.poster_id)
+    if poster and poster.selected_image_id:
+        image = db.get(ImageAsset, poster.selected_image_id)
+        if image and image.local_path:
+            image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
+            html_content = _embed_image_base64(html_content, image_abs_path)
+
+    filename = f"poster_v{version.version_no:03d}.html"
+    headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
+    return HTMLResponse(content=html_content, status_code=200, headers=headers)
+
+
 # ── POST /api/html/{poster_id}/versions ──────────────────────────────────────
 
 @html_router.post(
@@ -533,26 +564,15 @@ async def save_version(
     # 校验 HTML
     validation = validate_html(body.html)
 
-    # 将底图转为 base64 内嵌，使 HTML 可独立分享
-    if poster.selected_image_id:
-        image = db.get(ImageAsset, poster.selected_image_id)
-        if image and image.local_path:
-            image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
-            body_html = _embed_image_base64(body.html, image_abs_path)
-        else:
-            body_html = body.html
-    else:
-        body_html = body.html
-
     # 确定版本号
     version_no = _next_version_no(db, poster_id)
 
-    # 保存文件
+    # 保存文件（编辑态，保留 /workspace/... 路径，不内嵌 base64）
     rel_path = _html_rel_path(project.slug, campaign.slug, poster_id, version_no)
     abs_path = _html_abs_path(rel_path)
     os.makedirs(os.path.dirname(abs_path), exist_ok=True)
     async with aiofiles.open(abs_path, "w", encoding="utf-8") as f:
-        await f.write(body_html)
+        await f.write(body.html)
 
     # 创建版本记录
     version = HtmlVersion(

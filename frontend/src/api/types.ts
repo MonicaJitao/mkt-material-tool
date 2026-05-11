@@ -111,6 +111,10 @@ export interface PlanApproveResponse {
   status: CampaignStatus;
 }
 
+export interface PlanGenerateRequest {
+  model?: string | null;
+}
+
 export interface PlanGenerateResponse {
   campaign_id: string;
   task_id: string;

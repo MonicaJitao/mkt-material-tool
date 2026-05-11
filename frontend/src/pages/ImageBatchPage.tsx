@@ -2,8 +2,10 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { generationApi } from '@/api/generation';
+import { assetsApi } from '@/api/assets';
 import { CandidateGrid } from '@/components/CandidateGrid/CandidateGrid';
 import type { ImageBatchItem } from '@/api/types';
+import { useWorkflowStore } from '@/store/workflowStore';
 import './page.css';
 
 const SIZE_OPTIONS = ['9:16', '16:9', '1:1', '4:3'];
@@ -26,36 +28,80 @@ function isBatchDone(items: ImageBatchItem[]): boolean {
 export function ImageBatchPage() {
   const navigate = useNavigate();
 
-  const campaignId = sessionStorage.getItem('activeCampaignId') ?? '';
+  const campaignId = useWorkflowStore((s) => s.campaignId) ?? '';
+  const approvedPlan = useWorkflowStore((s) => s.approvedPlan);
+  const generatedImages = useWorkflowStore((s) => s.generatedImages);
+  const selectedImageId = useWorkflowStore((s) => s.selectedImageId);
+  const imageCount = useWorkflowStore((s) => s.imageCount);
+  const imageSize = useWorkflowStore((s) => s.imageSize);
+  const imageModel = useWorkflowStore((s) => s.imageModel);
 
-  const [count, setCount] = useState(4);
-  const [size, setSize] = useState('9:16');
-  const [model, setModel] = useState(MODEL_OPTIONS[0].value);
+  const setImageSettings = useWorkflowStore((s) => s.setImageSettings);
+  const setGeneratedImages = useWorkflowStore((s) => s.setGeneratedImages);
+  const setSelectedImageId = useWorkflowStore((s) => s.setSelectedImageId);
+  const clearHtmlPipeline = useWorkflowStore((s) => s.clearHtmlPipeline);
+  const loadAssets = useWorkflowStore((s) => s.loadAssets);
+
   const [batchId, setBatchId] = useState<string | null>(null);
-  const [items, setItems] = useState<ImageBatchItem[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPolling, setIsPolling] = useState(false);
 
   const pollRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const batchIdRef = useRef<string | null>(null);
-  const modelRef = useRef(model);
+  const modelRef = useRef(imageModel);
+  const assetsFetchAttempted = useRef<string | null>(null);
 
   useEffect(() => {
-    modelRef.current = model;
-  }, [model]);
+    assetsFetchAttempted.current = null;
+  }, [campaignId, approvedPlan]);
 
   useEffect(() => {
-    if (!campaignId) navigate('/brief');
+    modelRef.current = imageModel;
+  }, [imageModel]);
+
+  useEffect(() => {
+    setSelectedId(selectedImageId);
+  }, [selectedImageId, campaignId]);
+
+  useEffect(() => {
+    if (!campaignId) {
+      navigate('/brief');
+      return;
+    }
+    if (!approvedPlan || Object.keys(approvedPlan).length === 0) {
+      navigate('/plan-review');
+      return;
+    }
     return () => {
       if (pollRef.current) clearTimeout(pollRef.current);
     };
-  }, [campaignId, navigate]);
+  }, [campaignId, approvedPlan, navigate]);
+
+  useEffect(() => {
+    if (!campaignId) return;
+    if (generatedImages.length > 0) return;
+    if (selectedImageId) return;
+    if (assetsFetchAttempted.current === campaignId) return;
+    assetsFetchAttempted.current = campaignId;
+
+    let cancelled = false;
+    assetsApi
+      .listCampaignAssets(campaignId)
+      .then((data) => {
+        if (cancelled || data.items.length === 0) return;
+        loadAssets(data.items);
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [campaignId, generatedImages.length, selectedImageId, loadAssets]);
 
   async function pollBatch(id: string) {
     try {
       const data = await generationApi.getImageBatch(id);
-      setItems(data.items);
+      setGeneratedImages(data.items);
 
       if (!isBatchDone(data.items)) {
         pollRef.current = setTimeout(
@@ -73,22 +119,23 @@ export function ImageBatchPage() {
   const startBatchMutation = useMutation({
     mutationFn: () =>
       generationApi.createImageBatch(campaignId, {
-        count,
-        size,
-        model,
+        count: imageCount,
+        size: imageSize,
+        model: imageModel,
         reference_asset_ids: [],
       }),
     onSuccess: (data) => {
       if (pollRef.current) clearTimeout(pollRef.current);
       setBatchId(data.batch_id);
-      batchIdRef.current = data.batch_id;
-      setItems(data.items);
+      setGeneratedImages(data.items);
       setSelectedId(null);
+      setSelectedImageId(null);
+      clearHtmlPipeline();
       setError(null);
       setIsPolling(true);
       pollRef.current = setTimeout(
         () => pollBatch(data.batch_id),
-        pollInterval(model),
+        pollInterval(imageModel),
       );
     },
     onError: (err: Error) => {
@@ -100,7 +147,8 @@ export function ImageBatchPage() {
     mutationFn: (imageAssetId: string) =>
       generationApi.selectImage(campaignId, { image_asset_id: imageAssetId }),
     onSuccess: (data) => {
-      sessionStorage.setItem('selectedImageId', data.selected_image_id);
+      setSelectedImageId(data.selected_image_id);
+      clearHtmlPipeline();
       navigate('/html-generate');
     },
     onError: (err: Error) => {
@@ -108,7 +156,7 @@ export function ImageBatchPage() {
     },
   });
 
-  const hasCompleted = items.some((i) => i.status === 'completed');
+  const hasCompleted = generatedImages.some((i) => i.status === 'completed');
   const canProceed = selectedId !== null && !selectMutation.isPending;
 
   return (
@@ -123,8 +171,8 @@ export function ImageBatchPage() {
           生成数量
           <select
             className="brief-form__input brief-form__select"
-            value={count}
-            onChange={(e) => setCount(Number(e.target.value))}
+            value={imageCount}
+            onChange={(e) => setImageSettings({ imageCount: Number(e.target.value) })}
             disabled={isPolling}
           >
             {[1, 2, 4, 6, 8].map((n) => (
@@ -137,8 +185,8 @@ export function ImageBatchPage() {
           比例
           <select
             className="brief-form__input brief-form__select"
-            value={size}
-            onChange={(e) => setSize(e.target.value)}
+            value={imageSize}
+            onChange={(e) => setImageSettings({ imageSize: e.target.value })}
             disabled={isPolling}
           >
             {SIZE_OPTIONS.map((s) => (
@@ -151,8 +199,8 @@ export function ImageBatchPage() {
           模型
           <select
             className="brief-form__input brief-form__select"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
+            value={imageModel}
+            onChange={(e) => setImageSettings({ imageModel: e.target.value })}
             disabled={isPolling}
           >
             {MODEL_OPTIONS.map((m) => (
@@ -185,9 +233,9 @@ export function ImageBatchPage() {
         </p>
       )}
 
-      {items.length > 0 && (
+      {generatedImages.length > 0 && (
         <CandidateGrid
-          items={items}
+          items={generatedImages}
           selectedId={selectedId}
           onSelect={(id) => setSelectedId(id)}
         />

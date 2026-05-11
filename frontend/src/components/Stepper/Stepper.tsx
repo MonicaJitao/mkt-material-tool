@@ -1,11 +1,21 @@
+import type { MouseEvent } from 'react';
 import { NavLink } from 'react-router-dom';
 import type { WorkflowStep } from '@/app/workflow';
 import { StepperItem } from '@/components/Stepper/StepperItem';
+import { isWorkflowStepId, useWorkflowStore } from '@/store/workflowStore';
 import './stepper.css';
 
 interface StepperProps {
   steps: WorkflowStep[];
   currentStep: string;
+}
+
+function handleStepClick(e: MouseEvent<HTMLAnchorElement>, step: WorkflowStep) {
+  if (step.id === 'library') return;
+  if (!isWorkflowStepId(step.id)) return;
+  if (useWorkflowStore.getState().canVisitStep(step.id)) return;
+  e.preventDefault();
+  window.alert('请先完成前面的步骤');
 }
 
 export function Stepper({ steps, currentStep }: StepperProps) {
@@ -19,7 +29,12 @@ export function Stepper({ steps, currentStep }: StepperProps) {
           const state = index < currentIndex ? 'done' : index === currentIndex ? 'active' : 'todo';
 
           return (
-            <NavLink key={step.id} to={step.path} className="workflow-stepper__link">
+            <NavLink
+              key={step.id}
+              to={step.path}
+              className="workflow-stepper__link"
+              onClick={(e) => handleStepClick(e, step)}
+            >
               <StepperItem
                 index={index + 1}
                 label={step.label}

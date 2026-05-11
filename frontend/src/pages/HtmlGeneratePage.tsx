@@ -2,45 +2,48 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { generationApi } from '@/api/generation';
+import { useWorkflowStore } from '@/store/workflowStore';
 import './page.css';
 
 const MODEL_OPTIONS = [
   { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6（推荐）' },
   { value: 'claude-opus-4-7', label: 'Claude Opus 4.7（更强）' },
+  { value: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash（快速）' },
+  { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro（更强）' },
 ];
+
+function hasPlan(obj: Record<string, unknown> | null | undefined): boolean {
+  return !!obj && Object.keys(obj).length > 0;
+}
 
 export function HtmlGeneratePage() {
   const navigate = useNavigate();
 
-  const campaignId = sessionStorage.getItem('activeCampaignId') ?? '';
-  const selectedImageId = sessionStorage.getItem('selectedImageId') ?? '';
-  const rawPlan = sessionStorage.getItem('approvedPlan');
+  const campaignId = useWorkflowStore((s) => s.campaignId) ?? '';
+  const selectedImageId = useWorkflowStore((s) => s.selectedImageId) ?? '';
+  const approvedPlan = useWorkflowStore((s) => s.approvedPlan);
+  const htmlModel = useWorkflowStore((s) => s.htmlModel);
+  const setHtmlModel = useWorkflowStore((s) => s.setHtmlModel);
+  const setHtmlResult = useWorkflowStore((s) => s.setHtmlResult);
 
-  const [model, setModel] = useState(MODEL_OPTIONS[0].value);
   const [error, setError] = useState<string | null>(null);
 
-  const plan: Record<string, unknown> = (() => {
-    try {
-      return rawPlan ? (JSON.parse(rawPlan) as Record<string, unknown>) : {};
-    } catch {
-      return {};
-    }
-  })();
+  const plan: Record<string, unknown> = approvedPlan && hasPlan(approvedPlan) ? approvedPlan : {};
 
   useEffect(() => {
     if (!campaignId) navigate('/brief');
+    else if (!hasPlan(approvedPlan)) navigate('/plan-review');
     else if (!selectedImageId) navigate('/image-batch');
-  }, [campaignId, selectedImageId, navigate]);
+  }, [campaignId, selectedImageId, approvedPlan, navigate]);
 
   const generateMutation = useMutation({
     mutationFn: () =>
       generationApi.generateHtml(campaignId, {
         selected_image_id: selectedImageId,
-        model,
+        model: htmlModel,
       }),
     onSuccess: (data) => {
-      sessionStorage.setItem('activePosterId', data.poster_id);
-      sessionStorage.setItem('activeVersionId', data.version_id);
+      setHtmlResult({ posterId: data.poster_id, versionId: data.version_id });
       navigate('/html-editor');
     },
     onError: (err: Error) => {
@@ -95,8 +98,8 @@ export function HtmlGeneratePage() {
           生成模型
           <select
             className="brief-form__input brief-form__select"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
+            value={htmlModel}
+            onChange={(e) => setHtmlModel(e.target.value)}
             disabled={generateMutation.isPending}
           >
             {MODEL_OPTIONS.map((m) => (

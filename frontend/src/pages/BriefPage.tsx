@@ -1,22 +1,19 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { generationApi } from '@/api/generation';
 import type { TemplateListItem } from '@/api/types';
+import { useWorkflowStore } from '@/store/workflowStore';
 import './page.css';
 
 const SIZE_OPTIONS = ['9:16', '16:9', '1:1', '4:3'];
 
-const DEFAULT_BRIEF: Record<string, string> = {
-  festival: '',
-  audience: '',
-  theme_hint: '',
-  cities: '',
-  manager_name: '',
-  company_name: '',
-  visual_style: '',
-  size: '9:16',
-};
+const MODEL_OPTIONS = [
+  { value: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6（推荐）' },
+  { value: 'claude-opus-4-7', label: 'Claude Opus 4.7（更强）' },
+  { value: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash（快速）' },
+  { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro（更强）' },
+];
 
 const BRIEF_LABELS: Record<string, string> = {
   festival: '节日 / 营销节点',
@@ -31,17 +28,31 @@ const BRIEF_LABELS: Record<string, string> = {
 
 export function BriefPage() {
   const navigate = useNavigate();
-
-  const [projectName, setProjectName] = useState('');
-  const [campaignName, setCampaignName] = useState('');
-  const [selectedTemplate, setSelectedTemplate] = useState<TemplateListItem | null>(null);
-  const [brief, setBrief] = useState<Record<string, string>>(DEFAULT_BRIEF);
   const [error, setError] = useState<string | null>(null);
+
+  const projectName = useWorkflowStore((s) => s.projectName);
+  const campaignName = useWorkflowStore((s) => s.campaignName);
+  const selectedTemplateId = useWorkflowStore((s) => s.selectedTemplateId);
+  const brief = useWorkflowStore((s) => s.brief);
+  const planModel = useWorkflowStore((s) => s.planModel);
+
+  const setCampaignMeta = useWorkflowStore((s) => s.setCampaignMeta);
+  const updateBrief = useWorkflowStore((s) => s.updateBrief);
+  const setPlanModel = useWorkflowStore((s) => s.setPlanModel);
+  const setImageSettings = useWorkflowStore((s) => s.setImageSettings);
+  const setStructuredPlan = useWorkflowStore((s) => s.setStructuredPlan);
+  const setApprovedPlan = useWorkflowStore((s) => s.setApprovedPlan);
+  const clearImageAndHtml = useWorkflowStore((s) => s.clearImageAndHtml);
 
   const { data: templateData, isLoading: templatesLoading } = useQuery({
     queryKey: ['templates'],
     queryFn: () => generationApi.listTemplates(),
   });
+
+  const selectedTemplate = useMemo(() => {
+    if (!selectedTemplateId || !templateData?.items) return null;
+    return templateData.items.find((t) => t.id === selectedTemplateId) ?? null;
+  }, [selectedTemplateId, templateData?.items]);
 
   const createAndPlanMutation = useMutation({
     mutationFn: async () => {
@@ -59,12 +70,14 @@ export function BriefPage() {
         brief: briefPayload,
       });
 
-      const planned = await generationApi.generatePlan(created.campaign_id);
+      const planned = await generationApi.generatePlan(created.campaign_id, { model: planModel });
       return { campaignId: created.campaign_id, plan: planned };
     },
     onSuccess: ({ campaignId, plan }) => {
-      sessionStorage.setItem('activeCampaignId', campaignId);
-      sessionStorage.setItem('activePlan', JSON.stringify(plan.structured_plan));
+      setCampaignMeta({ campaignId });
+      setStructuredPlan(plan.structured_plan ?? {});
+      setApprovedPlan(null);
+      clearImageAndHtml();
       navigate('/plan-review');
     },
     onError: (err: Error) => {
@@ -73,7 +86,7 @@ export function BriefPage() {
   });
 
   function handleBriefChange(key: string, value: string) {
-    setBrief((prev) => ({ ...prev, [key]: value }));
+    updateBrief({ [key]: value });
   }
 
   const canSubmit =
@@ -99,7 +112,7 @@ export function BriefPage() {
                 type="text"
                 placeholder="例：微众银行节日营销"
                 value={projectName}
-                onChange={(e) => setProjectName(e.target.value)}
+                onChange={(e) => setCampaignMeta({ projectName: e.target.value })}
               />
             </label>
             <label className="brief-form__label">
@@ -109,7 +122,7 @@ export function BriefPage() {
                 type="text"
                 placeholder="例：五一劳动节造城者"
                 value={campaignName}
-                onChange={(e) => setCampaignName(e.target.value)}
+                onChange={(e) => setCampaignMeta({ campaignName: e.target.value })}
               />
             </label>
           </div>
@@ -121,14 +134,15 @@ export function BriefPage() {
             <p className="brief-form__hint">加载模板中…</p>
           ) : (
             <div className="brief-form__template-grid">
-              {(templateData?.items ?? []).map((tpl) => (
+              {(templateData?.items ?? []).map((tpl: TemplateListItem) => (
                 <button
                   key={tpl.id}
                   type="button"
                   className={`brief-form__template-card${selectedTemplate?.id === tpl.id ? ' brief-form__template-card--active' : ''}`}
                   onClick={() => {
-                    setSelectedTemplate(tpl);
-                    handleBriefChange('size', tpl.default_size);
+                    setCampaignMeta({ selectedTemplateId: tpl.id });
+                    updateBrief({ size: tpl.default_size });
+                    setImageSettings({ imageSize: tpl.default_size, imageCount: tpl.default_image_count });
                   }}
                 >
                   <strong>{tpl.name}</strong>
@@ -140,6 +154,23 @@ export function BriefPage() {
               ))}
             </div>
           )}
+        </fieldset>
+
+        <fieldset className="brief-form__section">
+          <legend className="brief-form__legend">生成模型</legend>
+          <label className="brief-form__label">
+            选择模型
+            <select
+              className="brief-form__input brief-form__select"
+              value={planModel}
+              onChange={(e) => setPlanModel(e.target.value)}
+              disabled={createAndPlanMutation.isPending}
+            >
+              {MODEL_OPTIONS.map((m) => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+          </label>
         </fieldset>
 
         <fieldset className="brief-form__section">

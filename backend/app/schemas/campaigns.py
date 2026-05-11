@@ -37,6 +37,12 @@ class PlanApproveResponse(BaseModel):
 
 # ── 方案生成响应（Agent C 实现，此处定义契约）────────────────────────────────
 
+class PlanGenerateRequest(BaseModel):
+    """POST /api/campaigns/{id}/plan/generate 请求体。"""
+
+    model: str | None = None
+
+
 class PlanGenerateResponse(BaseModel):
     """POST /api/campaigns/{id}/plan/generate 响应体（落地方案 §9.3）。"""
 

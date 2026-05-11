@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { generationApi } from '@/api/generation';
+import { useWorkflowStore } from '@/store/workflowStore';
 import './page.css';
 
 const PLAN_FIELD_LABELS: Record<string, string> = {
@@ -15,16 +16,15 @@ const PLAN_FIELD_LABELS: Record<string, string> = {
 export function PlanReviewPage() {
   const navigate = useNavigate();
 
-  const campaignId = sessionStorage.getItem('activeCampaignId') ?? '';
-  const rawPlan = sessionStorage.getItem('activePlan');
+  const campaignId = useWorkflowStore((s) => s.campaignId) ?? '';
+  const structuredPlan = useWorkflowStore((s) => s.structuredPlan);
+  const planModel = useWorkflowStore((s) => s.planModel);
 
-  const [plan, setPlan] = useState<Record<string, unknown>>(() => {
-    try {
-      return rawPlan ? (JSON.parse(rawPlan) as Record<string, unknown>) : {};
-    } catch {
-      return {};
-    }
-  });
+  const setStructuredPlan = useWorkflowStore((s) => s.setStructuredPlan);
+  const setApprovedPlan = useWorkflowStore((s) => s.setApprovedPlan);
+  const clearImageAndHtml = useWorkflowStore((s) => s.clearImageAndHtml);
+
+  const [plan, setPlan] = useState<Record<string, unknown>>({});
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -33,12 +33,22 @@ export function PlanReviewPage() {
     }
   }, [campaignId, navigate]);
 
+  useEffect(() => {
+    if (structuredPlan && Object.keys(structuredPlan).length > 0) {
+      setPlan({ ...structuredPlan });
+    } else {
+      setPlan({});
+    }
+  }, [structuredPlan]);
+
   const regenerateMutation = useMutation({
-    mutationFn: () => generationApi.generatePlan(campaignId),
+    mutationFn: () => generationApi.generatePlan(campaignId, { model: planModel }),
     onSuccess: (data) => {
       const newPlan = data.structured_plan ?? {};
       setPlan(newPlan);
-      sessionStorage.setItem('activePlan', JSON.stringify(newPlan));
+      setStructuredPlan(newPlan);
+      setApprovedPlan(null);
+      clearImageAndHtml();
       setError(null);
     },
     onError: (err: Error) => {
@@ -50,7 +60,8 @@ export function PlanReviewPage() {
     mutationFn: () =>
       generationApi.approvePlan(campaignId, { approved_plan: plan }),
     onSuccess: () => {
-      sessionStorage.setItem('approvedPlan', JSON.stringify(plan));
+      setApprovedPlan(plan);
+      clearImageAndHtml();
       navigate('/image-batch');
     },
     onError: (err: Error) => {

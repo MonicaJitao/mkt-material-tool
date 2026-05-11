@@ -14,12 +14,21 @@ Brief Agent 与 Prompt Agent 单元测试。
 """
 
 import json
-from unittest.mock import AsyncMock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 
 from app.services.brief_agent import BriefAgent
 from app.services.prompt_agent import PromptAgent
+
+try:
+    from unittest.mock import AsyncMock  # type: ignore[attr-defined]
+except ImportError:
+    class AsyncMock(Mock):
+        """Python 3.6 fallback for AsyncMock used by patch(new_callable=...)."""
+
+        async def __call__(self, *args, **kwargs):
+            return super().__call__(*args, **kwargs)
 
 # ── 测试数据 ──────────────────────────────────────────────────────────────────
 
@@ -165,7 +174,7 @@ async def test_prompt_agent_returns_both_prompts():
     raw_response = json.dumps(SAMPLE_PROMPTS, ensure_ascii=False)
 
     with patch(
-        "app.services.prompt_agent.ClaudeProvider.complete",
+        "app.services.prompt_agent.LlmProvider.complete",
         new_callable=AsyncMock,
         return_value=raw_response,
     ):
@@ -178,6 +187,8 @@ async def test_prompt_agent_returns_both_prompts():
 
     assert "image_prompt" in result
     assert "html_prompt" in result
+    assert isinstance(result["image_prompt"], str)
+    assert isinstance(result["html_prompt"], str)
     assert "9:16" in result["image_prompt"] or "9:16" in result["html_prompt"]
 
 
@@ -191,7 +202,7 @@ async def test_prompt_agent_parses_markdown_wrapped_json():
     )
 
     with patch(
-        "app.services.prompt_agent.ClaudeProvider.complete",
+        "app.services.prompt_agent.LlmProvider.complete",
         new_callable=AsyncMock,
         return_value=raw_response,
     ):
@@ -203,6 +214,35 @@ async def test_prompt_agent_parses_markdown_wrapped_json():
 
     assert "image_prompt" in result
     assert "html_prompt" in result
+    assert isinstance(result["image_prompt"], str)
+    assert isinstance(result["html_prompt"], str)
+
+
+@pytest.mark.asyncio
+async def test_prompt_agent_system_prompt_contains_json_oneshot_and_contract():
+    """System prompt 应包含合法 JSON one-shot 与输出契约保护语句。"""
+    raw_response = json.dumps(SAMPLE_PROMPTS, ensure_ascii=False)
+    captured_systems: list[str] = []
+
+    async def mock_complete(system, user_message, **kwargs):
+        captured_systems.append(system)
+        return raw_response
+
+    with patch(
+        "app.services.prompt_agent.LlmProvider.complete",
+        side_effect=mock_complete,
+    ):
+        agent = PromptAgent()
+        await agent.generate_prompts(
+            approved_plan=SAMPLE_PLAN,
+            brief=SAMPLE_BRIEF,
+        )
+
+    assert len(captured_systems) == 1
+    system_text = captured_systems[0]
+    assert '"image_prompt": "Shenzhen Labor Day marketing poster background' in system_text
+    assert "只输出一个 JSON object" in system_text
+    assert "必须且只能包含两个字段：image_prompt 和 html_prompt" in system_text
 
 
 @pytest.mark.asyncio
@@ -216,7 +256,7 @@ async def test_prompt_agent_includes_template_prompts_in_message():
         return raw_response
 
     with patch(
-        "app.services.prompt_agent.ClaudeProvider.complete",
+        "app.services.prompt_agent.LlmProvider.complete",
         side_effect=mock_complete,
     ):
         agent = PromptAgent()
@@ -239,7 +279,7 @@ async def test_prompt_agent_includes_template_prompts_in_message():
 async def test_prompt_agent_raises_on_invalid_json():
     """Claude 返回非法 JSON 时，PromptAgent 应抛出异常。"""
     with patch(
-        "app.services.prompt_agent.ClaudeProvider.complete",
+        "app.services.prompt_agent.LlmProvider.complete",
         new_callable=AsyncMock,
         return_value="不是 JSON 内容",
     ):
@@ -262,7 +302,7 @@ async def test_prompt_agent_size_passed_to_message():
         return raw_response
 
     with patch(
-        "app.services.prompt_agent.ClaudeProvider.complete",
+        "app.services.prompt_agent.LlmProvider.complete",
         side_effect=mock_complete,
     ):
         agent = PromptAgent()

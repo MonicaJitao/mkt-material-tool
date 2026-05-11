@@ -180,3 +180,22 @@ def test_multiple_issues_all_reported():
     result = validate_html(html)
     assert result.ok is False
     assert len(result.issues) >= 2
+
+
+# ── 编辑态 /workspace/... 路径回归验证 ───────────────────────────────────────
+
+def test_workspace_url_reference_passes():
+    """编辑态 HTML 保留 /workspace/... 路径，校验器不应误报。"""
+    result = validate_html(VALID_HTML, image_filename="bg.jpg")
+    assert result.ok is True
+    assert result.issues == []
+
+
+def test_workspace_url_without_base64_passes():
+    """不含 base64 data URI 的 /workspace/... 引用应通过校验。"""
+    html = VALID_HTML.replace(
+        "url('/workspace/projects/p/c/assets/bg.jpg')",
+        "url('/workspace/projects/p/c/assets/bg.jpg')",
+    )
+    result = validate_html(html)
+    assert result.ok is True

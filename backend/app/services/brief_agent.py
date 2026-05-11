@@ -8,7 +8,7 @@ Brief Agent：将用户填写的表单润色为结构化视觉方案（落地方
 import json
 import re
 
-from app.services.claude_provider import ClaudeProvider
+from app.services.claude_provider import LlmProvider
 
 _SYSTEM = """\
 你是一位专业的营销视觉方案策划师，擅长将简单的营销需求转化为完整的视觉方案。
@@ -39,8 +39,8 @@ def _parse_json(raw: str) -> dict:
 
 
 class BriefAgent:
-    def __init__(self, provider: ClaudeProvider | None = None):
-        self.provider = provider or ClaudeProvider()
+    def __init__(self, provider: LlmProvider  | None = None):
+        self.provider = provider or LlmProvider()
 
     async def generate_plan(
         self,

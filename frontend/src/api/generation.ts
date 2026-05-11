@@ -30,8 +30,8 @@ export const generationApi = {
 
   // ── 视觉方案 ──────────────────────────────────────────────────
 
-  generatePlan(campaignId: string): Promise<PlanGenerateResponse> {
-    return apiClient.post<PlanGenerateResponse>(`/api/campaigns/${campaignId}/plan/generate`);
+  generatePlan(campaignId: string, body?: { model?: string }): Promise<PlanGenerateResponse> {
+    return apiClient.post<PlanGenerateResponse>(`/api/campaigns/${campaignId}/plan/generate`, body);
   },
 
   approvePlan(campaignId: string, body: PlanApproveRequest): Promise<PlanApproveResponse> {

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { assetsApi } from '@/api/assets';
 import type { CampaignOut } from '@/api/types';
+import { useWorkflowStore } from '@/store/workflowStore';
 import './library-page.css';
 
 /** 活动状态 → 中文标签 */
@@ -49,6 +50,25 @@ function formatTime(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+async function hydrateWorkflowFromCampaign(campaign: CampaignOut) {
+  const store = useWorkflowStore.getState();
+  store.reset();
+  store.loadCampaignBase(campaign);
+
+  const [assetsResult, postersResult] = await Promise.allSettled([
+    assetsApi.listCampaignAssets(campaign.id),
+    assetsApi.listCampaignPosters(campaign.id),
+  ]);
+
+  if (assetsResult.status === 'fulfilled') {
+    store.loadAssets(assetsResult.value.items);
+  }
+
+  if (postersResult.status === 'fulfilled') {
+    store.loadPosters(postersResult.value);
+  }
+}
+
 const ALL_STATUSES = [
   'plan_pending_review',
   'plan_approved',
@@ -69,6 +89,8 @@ export function LibraryPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   // 状态筛选
   const [statusFilter, setStatusFilter] = useState<string>('');
+  const [continuingId, setContinuingId] = useState<string | null>(null);
+  const [continueError, setContinueError] = useState<string | null>(null);
 
   // ── 查询项目列表 ──────────────────────────────────────────────
   const projectsQuery = useQuery({
@@ -87,29 +109,18 @@ export function LibraryPage() {
     enabled: !!selectedProjectId,
   });
 
-  // ── 继续编辑 ──────────────────────────────────────────────────
   const handleContinue = useCallback(
-    (campaign: CampaignOut) => {
-      // 恢复 sessionStorage，供目标页面读取
-      sessionStorage.setItem('activeCampaignId', campaign.id);
-
-      // brief 数据
-      if (campaign.brief) {
-        sessionStorage.setItem('briefData', JSON.stringify(campaign.brief));
+    async (campaign: CampaignOut) => {
+      setContinuingId(campaign.id);
+      setContinueError(null);
+      try {
+        await hydrateWorkflowFromCampaign(campaign);
+        navigate(resolveContinuePath(campaign.status));
+      } catch (err) {
+        setContinueError(err instanceof Error ? err.message : '恢复活动失败，请重试');
+      } finally {
+        setContinuingId(null);
       }
-
-      // approved_plan
-      if (campaign.approved_plan) {
-        sessionStorage.setItem('approvedPlan', JSON.stringify(campaign.approved_plan));
-      }
-
-      // structured_plan（方案待确认时用）
-      if (campaign.structured_plan) {
-        sessionStorage.setItem('structuredPlan', JSON.stringify(campaign.structured_plan));
-      }
-
-      const path = resolveContinuePath(campaign.status);
-      navigate(path);
     },
     [navigate],
   );
@@ -123,6 +134,8 @@ export function LibraryPage() {
         <h2>素材库</h2>
         <p>按项目和活动查看底图、HTML 与版本历史，选择已有活动继续编辑。</p>
       </header>
+
+      {continueError && <p className="brief-form__error">{continueError}</p>}
 
       <div className="library-page__layout">
         {/* 左侧：项目列表 */}
@@ -225,9 +238,14 @@ export function LibraryPage() {
                   <button
                     type="button"
                     className="btn btn--ghost library-page__continue-btn"
-                    onClick={() => handleContinue(c)}
+                    disabled={continuingId !== null}
+                    onClick={() => void handleContinue(c)}
                   >
-                    {c.status === 'archived' ? '查看' : '继续编辑'}
+                    {continuingId === c.id
+                      ? '恢复中…'
+                      : c.status === 'archived'
+                        ? '查看'
+                        : '继续编辑'}
                   </button>
                 </article>
               ))}

@@ -29,6 +29,7 @@ from app.schemas.campaigns import (
     CampaignOut,
     PlanApproveRequest,
     PlanApproveResponse,
+    PlanGenerateRequest,
     PlanGenerateResponse,
 )
 from app.schemas.common import ApiResponse
@@ -160,7 +161,11 @@ def get_campaign(campaign_id: str, db: Session = Depends(get_db)):
     "/{campaign_id}/plan/generate",
     response_model=ApiResponse[PlanGenerateResponse],
 )
-async def generate_plan(campaign_id: str, db: Session = Depends(get_db)):
+async def generate_plan(
+    campaign_id: str,
+    body: PlanGenerateRequest | None = None,
+    db: Session = Depends(get_db),
+):
     """
     调用 Brief Agent 将 brief 表单生成结构化视觉方案。
 
@@ -193,13 +198,15 @@ async def generate_plan(campaign_id: str, db: Session = Depends(get_db)):
     db.flush()
 
     # 创建 GenerationTask 留痕
+    model_name = (body.model if body else None) or settings.ANTHROPIC_MODEL
+    from app.services.claude_provider import get_provider, provider_name_for_model
     task = GenerationTask(
         id=new_id("gtsk"),
         campaign_id=campaign_id,
         task_type="brief_plan",
         status="running",
-        model=settings.ANTHROPIC_MODEL,
-        provider="claude",
+        model=model_name,
+        provider=provider_name_for_model(model_name),
         input_json=json.dumps({"brief": brief}, ensure_ascii=False),
     )
     db.add(task)
@@ -208,7 +215,7 @@ async def generate_plan(campaign_id: str, db: Session = Depends(get_db)):
     # 调用 Brief Agent
     try:
         from app.services.brief_agent import BriefAgent
-        agent = BriefAgent()
+        agent = BriefAgent(provider=get_provider(model_name))
         structured_plan = await agent.generate_plan(
             brief=brief,
             template_name=template.name if template else None,
