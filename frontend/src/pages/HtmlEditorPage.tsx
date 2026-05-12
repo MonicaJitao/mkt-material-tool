@@ -36,6 +36,7 @@ export function HtmlEditorPage() {
   const setHtmlResult = useWorkflowStore((s) => s.setHtmlResult);
   const loadPosters = useWorkflowStore((s) => s.loadPosters);
 
+  const [activeTab, setActiveTab] = useState<'preview' | 'editor'>('preview');
   const [selectedVersionId, setSelectedVersionId] = useState(storeVersionId);
   const [editorContent, setEditorContent] = useState('');
   const [dirty, setDirty] = useState(false);
@@ -193,9 +194,26 @@ export function HtmlEditorPage() {
       <header className="html-editor-page__header">
         <div className="html-editor-page__title-group">
           <h2>HTML 预览与编辑</h2>
-          {dirty && <span className="html-editor-page__dirty-badge">未保存</span>}
           {savedNotice && <span className="html-editor-page__saved-notice">{savedNotice}</span>}
         </div>
+
+        <div className="html-editor-page__header-controls">
+          {versions.length > 0 && (
+            <select
+              className="html-editor-page__version-select"
+              aria-label="切换 HTML 版本"
+              value={selectedVersionId}
+              onChange={(e) => handleVersionSwitch(e.target.value)}
+            >
+              {[...versions].reverse().map((v) => (
+                <option key={v.id} value={v.id}>
+                  v{v.version_no} · {sourceLabel(v.source)} · {formatTime(v.created_at)}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
         <div className="html-editor-page__actions">
           <button
             type="button"
@@ -235,72 +253,63 @@ export function HtmlEditorPage() {
       {hydrateError && <p className="brief-form__error">{hydrateError}</p>}
       {error && <p className="brief-form__error">{error}</p>}
 
-      <div className="html-editor-page__body">
-        <div className="html-editor-page__preview-panel">
-          <div className="html-editor-page__panel-label">
-            预览
-            {dirty && <span className="html-editor-page__live-badge">实时</span>}
-          </div>
-          {!posterId ? (
-            <div className="html-editor-page__loading shimmer">正在恢复海报…</div>
-          ) : isLoading ? (
-            <div className="html-editor-page__loading shimmer">加载中…</div>
-          ) : (
-            <HtmlPreview
-              versionId={dirty ? null : selectedVersionId}
-              htmlContent={previewHtml}
-              className="html-editor-page__preview"
-            />
-          )}
-        </div>
+      <div className="html-editor-page__tabs" role="tablist" aria-label="HTML 编辑视图">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'preview'}
+          className={`html-editor-page__tab ${activeTab === 'preview' ? 'html-editor-page__tab--active' : ''}`}
+          onClick={() => setActiveTab('preview')}
+        >
+          预览
+          {dirty && <span className="html-editor-page__live-badge">实时</span>}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeTab === 'editor'}
+          className={`html-editor-page__tab ${activeTab === 'editor' ? 'html-editor-page__tab--active' : ''}`}
+          onClick={() => setActiveTab('editor')}
+        >
+          源码编辑
+          {dirty && <span className="html-editor-page__dirty-badge">未保存</span>}
+        </button>
+      </div>
 
-        <div className="html-editor-page__editor-panel">
-          <div className="html-editor-page__panel-label">源码编辑</div>
-          <div className="html-editor-page__editor-container">
+      <div className="html-editor-page__body">
+        {activeTab === 'preview' && (
+          <div className="html-editor-page__preview-panel" role="tabpanel">
             {!posterId ? (
               <div className="html-editor-page__loading shimmer">正在恢复海报…</div>
             ) : isLoading ? (
               <div className="html-editor-page__loading shimmer">加载中…</div>
             ) : (
-              <HtmlEditor
-                value={editorContent}
-                onChange={handleEditorChange}
-                className="html-editor-page__editor"
+              <HtmlPreview
+                versionId={dirty ? null : selectedVersionId}
+                htmlContent={previewHtml}
+                className="html-editor-page__preview"
               />
             )}
           </div>
+        )}
 
-          <div className="html-editor-page__versions">
-            <div className="html-editor-page__panel-label">版本历史</div>
-            {versions.length === 0 ? (
-              <p className="brief-form__hint">暂无版本记录</p>
-            ) : (
-              <ul className="html-editor-page__version-list">
-                {[...versions].reverse().map((v) => (
-                  <li
-                    key={v.id}
-                    className={`html-editor-page__version-item ${
-                      v.id === selectedVersionId ? 'html-editor-page__version-item--active' : ''
-                    }`}
-                    onClick={() => handleVersionSwitch(v.id)}
-                    role="button"
-                    tabIndex={0}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        handleVersionSwitch(v.id);
-                      }
-                    }}
-                  >
-                    <span className="html-editor-page__version-no">v{v.version_no}</span>
-                    <span className="html-editor-page__version-source">{sourceLabel(v.source)}</span>
-                    <span className="html-editor-page__version-time">{formatTime(v.created_at)}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+        {activeTab === 'editor' && (
+          <div className="html-editor-page__editor-panel" role="tabpanel">
+            <div className="html-editor-page__editor-container">
+              {!posterId ? (
+                <div className="html-editor-page__loading shimmer">正在恢复海报…</div>
+              ) : isLoading ? (
+                <div className="html-editor-page__loading shimmer">加载中…</div>
+              ) : (
+                <HtmlEditor
+                  value={editorContent}
+                  onChange={handleEditorChange}
+                  className="html-editor-page__editor"
+                />
+              )}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </section>
   );

@@ -32,16 +32,6 @@
   font-size: var(--text-xl);
 }
 
-.html-editor-page__dirty-badge {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--accent-primary);
-  background: var(--accent-primary-bg);
-  padding: 2px 8px;
-  border-radius: var(--radius-full);
-  letter-spacing: var(--tracking-wide);
-}
-
 .html-editor-page__saved-notice {
   font-family: var(--font-mono);
   font-size: var(--text-xs);
@@ -51,6 +41,32 @@
   border-radius: var(--radius-full);
   letter-spacing: var(--tracking-wide);
   animation: fadeInFast var(--duration-normal) var(--ease-out) both;
+}
+
+/* ── 版本下拉选择器 ───────────────────────────────────────────── */
+
+.html-editor-page__header-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-left: auto;
+}
+
+.html-editor-page__version-select {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 2px var(--space-2);
+  cursor: pointer;
+  max-width: 280px;
+}
+
+.html-editor-page__version-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
 }
 
 .html-editor-page__actions {
@@ -64,44 +80,48 @@
   margin: 0;
 }
 
-/* ── 主体布局 ─────────────────────────────────────────────────── */
+/* ── Tab 导航栏 ───────────────────────────────────────────────── */
 
-.html-editor-page__body {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-4);
-  min-height: 600px;
+.html-editor-page__tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 0 var(--space-1);
 }
 
-.html-editor-page__panel-label {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--accent-secondary);
-  letter-spacing: var(--tracking-wide);
-  margin-bottom: var(--space-2);
+.html-editor-page__tab {
   display: flex;
   align-items: center;
   gap: var(--space-2);
+  padding: var(--space-2) var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  transition: color var(--duration-fast) var(--ease-out),
+              border-color var(--duration-fast) var(--ease-out);
+  margin-bottom: -1px;
 }
 
-/* ── 预览面板 ─────────────────────────────────────────────────── */
-
-.html-editor-page__preview-panel {
-  display: flex;
-  flex-direction: column;
+.html-editor-page__tab:hover {
+  color: var(--text-primary);
 }
 
-.html-editor-page__preview {
-  flex: 1;
+.html-editor-page__tab--active {
+  color: var(--accent-primary);
+  border-bottom-color: var(--accent-primary);
 }
 
-.html-editor-page__preview .html-preview {
-  height: 100%;
-  min-height: 500px;
-}
-
-.html-editor-page__preview .html-preview__frame {
-  min-height: 500px;
+.html-editor-page__dirty-badge {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  color: var(--accent-primary);
+  background: var(--accent-primary-bg);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  letter-spacing: var(--tracking-wide);
 }
 
 .html-editor-page__live-badge {
@@ -114,80 +134,45 @@
   letter-spacing: var(--tracking-wide);
 }
 
-/* ── 编辑面板 ─────────────────────────────────────────────────── */
+/* ── 主体布局（单列全宽）────────────────────────────────────── */
 
-.html-editor-page__editor-panel {
+.html-editor-page__body {
   display: flex;
   flex-direction: column;
-  gap: var(--space-3);
+  min-height: 600px;
 }
+
+.html-editor-page__preview-panel,
+.html-editor-page__editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── 预览面板 ─────────────────────────────────────────────────── */
+
+.html-editor-page__preview {
+  flex: 1;
+}
+
+.html-editor-page__preview .html-preview {
+  height: 100%;
+  min-height: 600px;
+}
+
+.html-editor-page__preview .html-preview__frame {
+  min-height: 600px;
+}
+
+/* ── 编辑面板 ─────────────────────────────────────────────────── */
 
 .html-editor-page__editor-container {
   flex: 1;
-  min-height: 400px;
+  min-height: 600px;
 }
 
 .html-editor-page__editor {
   height: 100%;
-}
-
-/* ── 版本时间线 ───────────────────────────────────────────────── */
-
-.html-editor-page__versions {
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-lg);
-  padding: var(--space-3);
-  background: rgba(28, 28, 30, 0.4);
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.html-editor-page__version-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-1);
-}
-
-.html-editor-page__version-item {
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  gap: var(--space-3);
-  align-items: center;
-  padding: var(--space-2) var(--space-3);
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  font-size: var(--text-sm);
-  transition:
-    background var(--duration-fast) var(--ease-out),
-    border-color var(--duration-fast) var(--ease-out);
-}
-
-.html-editor-page__version-item:hover {
-  background: var(--bg-elevated);
-}
-
-.html-editor-page__version-item--active {
-  background: rgba(217, 79, 43, 0.1);
-  border-left: 2px solid var(--accent-primary);
-}
-
-.html-editor-page__version-no {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--accent-secondary);
-  font-weight: var(--font-semibold);
-  min-width: 32px;
-}
-
-.html-editor-page__version-source {
-  color: var(--text-secondary);
-  font-size: var(--text-xs);
-}
-
-.html-editor-page__version-time {
-  font-family: var(--font-mono);
-  font-size: var(--text-xs);
-  color: var(--text-muted);
 }
 
 /* ── 加载状态 ─────────────────────────────────────────────────── */
@@ -205,14 +190,19 @@
 /* ── 响应式 ──────────────────────────────────────────────────── */
 
 @media (max-width: 960px) {
-  .html-editor-page__body {
-    grid-template-columns: 1fr;
-    min-height: auto;
-  }
-
   .html-editor-page__header {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .html-editor-page__header-controls {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .html-editor-page__version-select {
+    max-width: 100%;
+    width: 100%;
   }
 
   .html-editor-page__actions {
