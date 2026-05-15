@@ -182,8 +182,6 @@ export function HtmlEditorPage() {
     document.body.removeChild(a);
   }, [selectedVersionId]);
 
-  const previewHtml = dirty ? editorContent : undefined;
-
   const versions: HtmlVersionOut[] = posterQuery.data?.versions ?? [];
   const isLoading = !!posterId && (posterQuery.isLoading || versionQuery.isLoading);
   const isSaving = saveMutation.isPending;
@@ -262,7 +260,7 @@ export function HtmlEditorPage() {
           onClick={() => setActiveTab('preview')}
         >
           预览
-          {dirty && <span className="html-editor-page__live-badge">实时</span>}
+          {dirty && <span className="html-editor-page__dirty-badge">未保存</span>}
         </button>
         <button
           type="button"
@@ -285,8 +283,7 @@ export function HtmlEditorPage() {
               <div className="html-editor-page__loading shimmer">加载中…</div>
             ) : (
               <HtmlPreview
-                versionId={dirty ? null : selectedVersionId}
-                htmlContent={previewHtml}
+                versionId={selectedVersionId}
                 className="html-editor-page__preview"
               />
             )}

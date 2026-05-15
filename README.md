@@ -1,26 +1,30 @@
 # mkt-material-tool
 
-微众银行营销素材自动化生成工具 —— 从 Brief 到海报，AI 驱动的六阶段工作流。
+营销素材自动化生成工具 —— 从 Brief 到海报，AI 驱动的六阶段工作流。
 
 ## 功能概览
 
-| 阶段 | 说明 |
-|------|------|
-| Brief | 填写活动信息（节日、受众、城市、客户经理、风格、尺寸） |
-| Plan Review | AI 生成结构化视觉方案，用户审核 |
-| Image Batch | 批量生成候选背景图（Tuzi Banana / Gemini） |
-| HTML Generate | 选定图片后，Claude 生成 HTML 海报 |
-| HTML Editor | iframe 沙箱预览 + CodeMirror 源码编辑 + 版本管理 |
-| Library | 浏览和管理历史活动、素材、HTML 版本 |
+
+| 阶段            | 说明                                   |
+| ------------- | ------------------------------------ |
+| Brief         | 填写活动信息（节日、受众、城市、客户经理、风格、尺寸）          |
+| Plan Review   | AI 生成结构化视觉方案，用户审核                    |
+| Image Batch   | 批量生成候选背景图（Tuzi Banana / Gemini）      |
+| HTML Generate | 选定图片后，Claude 生成 HTML 海报              |
+| HTML Editor   | iframe 沙箱预览 + CodeMirror 源码编辑 + 版本管理 |
+| Library       | 浏览和管理历史活动、素材、HTML 版本                 |
+
 
 ## 技术栈
 
 **后端**
+
 - Python 3.11+ / FastAPI / SQLAlchemy / Pydantic v2
 - SQLite 数据库（7 张表，11 状态状态机）
 - httpx 调用外部 API（Tuzi Banana 图像生成、Anthropic Claude）
 
 **前端**
+
 - React 18 + TypeScript 5.5
 - Vite 5.4 / React Router 6 / TanStack Query / Zustand / CodeMirror 6
 - 纯 CSS + Design Tokens（暗色主题，劳动红 + 鎏金配色）
@@ -123,14 +127,16 @@ Claude 生成 HTML 海报
 
 参见 [backend/.env.example](backend/.env.example)，主要配置项：
 
-| 变量 | 说明 |
-|------|------|
-| `TUZI_API_KEY` | Tuzi Banana API 密钥 |
-| `TUZI_API_BASE` | Tuzi API 地址（默认 `https://api.tu-zi.com`） |
-| `ANTHROPIC_API_KEY` | Anthropic Claude API 密钥 |
-| `ANTHROPIC_BASE_URL` | Claude API 地址（支持代理） |
-| `ANTHROPIC_MODEL` | Claude 模型名称 |
-| `DATABASE_URL` | SQLite 数据库连接串 |
+
+| 变量                   | 说明                                      |
+| -------------------- | --------------------------------------- |
+| `TUZI_API_KEY`       | Tuzi Banana API 密钥                      |
+| `TUZI_API_BASE`      | Tuzi API 地址（默认 `https://api.tu-zi.com`） |
+| `ANTHROPIC_API_KEY`  | Anthropic Claude API 密钥                 |
+| `ANTHROPIC_BASE_URL` | Claude API 地址（支持代理）                     |
+| `ANTHROPIC_MODEL`    | Claude 模型名称                             |
+| `DATABASE_URL`       | SQLite 数据库连接串                           |
+
 
 ## License
 

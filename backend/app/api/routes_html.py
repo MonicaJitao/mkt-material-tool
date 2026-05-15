@@ -93,6 +93,17 @@ def _embed_image_base64(html_content: str, image_abs_path: str) -> str:
     return re.sub(r"url\(['\"]?(?!data:)([^'\")\s]+)['\"]?\)", f"url('{data_uri}')", html_content)
 
 
+def _embed_poster_selected_image(html_content: str, version: HtmlVersion, db: Session) -> str:
+    """将版本关联海报的选中底图内嵌为 base64（与导出逻辑一致，供预览复用）。"""
+    poster = db.get(HtmlPoster, version.poster_id)
+    if poster and poster.selected_image_id:
+        image = db.get(ImageAsset, poster.selected_image_id)
+        if image and image.local_path:
+            image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
+            html_content = _embed_image_base64(html_content, image_abs_path)
+    return html_content
+
+
 def _get_required_fields(brief: dict) -> list[str]:
     """从 brief 中提取需要在 HTML 中出现的关键文字字段值。"""
     fields = []
@@ -492,23 +503,10 @@ async def _version_html_response(version_id: str, db: Session) -> HTMLResponse:
 
 @html_router.get("/{version_id}/preview", response_class=HTMLResponse)
 async def get_version_preview(version_id: str, db: Session = Depends(get_db)):
-    """契约预览接口：GET /api/html/{version_id}/preview。"""
-    return await _version_html_response(version_id, db)
-
-
-@html_router.get("/{version_id}/raw", response_class=HTMLResponse)
-async def get_version_raw(version_id: str, db: Session = Depends(get_db)):
-    """兼容旧前端的 raw 预览地址。"""
-    return await _version_html_response(version_id, db)
-
-
-# ── GET /api/html/{version_id}/export ────────────────────────────────────────
-
-@html_router.get("/{version_id}/export", response_class=HTMLResponse)
-async def export_version(version_id: str, db: Session = Depends(get_db)):
     """
-    导出自包含 HTML：将底图 URL 替换为 base64 data URI，以附件形式下载。
-    编辑态 HTML 保持不变，仅导出时做内嵌。
+    契约预览接口：GET /api/html/{version_id}/preview。
+
+    与导出一致将底图内嵌为 base64，避免 iframe 内相对路径或 /workspace 解析失败。
     """
     version = db.get(HtmlVersion, version_id)
     if version is None:
@@ -524,13 +522,39 @@ async def export_version(version_id: str, db: Session = Depends(get_db)):
     async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
         html_content = await f.read()
 
-    # 找到关联海报，获取底图绝对路径
-    poster = db.get(HtmlPoster, version.poster_id)
-    if poster and poster.selected_image_id:
-        image = db.get(ImageAsset, poster.selected_image_id)
-        if image and image.local_path:
-            image_abs_path = os.path.join(settings.WORKSPACE_DIR, image.local_path)
-            html_content = _embed_image_base64(html_content, image_abs_path)
+    html_content = _embed_poster_selected_image(html_content, version, db)
+    return HTMLResponse(content=html_content, status_code=200)
+
+
+@html_router.get("/{version_id}/raw", response_class=HTMLResponse)
+async def get_version_raw(version_id: str, db: Session = Depends(get_db)):
+    """兼容旧前端的 raw 预览地址。"""
+    return await _version_html_response(version_id, db)
+
+
+# ── GET /api/html/{version_id}/export ────────────────────────────────────────
+
+@html_router.get("/{version_id}/export", response_class=HTMLResponse)
+async def export_version(version_id: str, db: Session = Depends(get_db)):
+    """
+    导出自包含 HTML：将底图 URL 替换为 base64 data URI，以附件形式下载。
+    磁盘上的版本文件仍保留原路径；预览与导出响应均内嵌底图。
+    """
+    version = db.get(HtmlVersion, version_id)
+    if version is None:
+        return HTMLResponse("<h1>版本不存在</h1>", status_code=404)
+
+    if not version.html_path:
+        return HTMLResponse("<h1>HTML 文件路径为空</h1>", status_code=404)
+
+    abs_path = _html_abs_path(version.html_path)
+    if not os.path.exists(abs_path):
+        return HTMLResponse(f"<h1>HTML 文件不存在：{version.html_path}</h1>", status_code=404)
+
+    async with aiofiles.open(abs_path, "r", encoding="utf-8") as f:
+        html_content = await f.read()
+
+    html_content = _embed_poster_selected_image(html_content, version, db)
 
     filename = f"poster_v{version.version_no:03d}.html"
     headers = {"Content-Disposition": f'attachment; filename="{filename}"'}
